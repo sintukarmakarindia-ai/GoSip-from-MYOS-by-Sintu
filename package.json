@@ -1,0 +1,7 @@
+{
+  "name": "gosip-backend",
+  "version": "1.0.0",
+  "dependencies": {
+    "firebase-admin": "^11.10.1"
+  }
+}
