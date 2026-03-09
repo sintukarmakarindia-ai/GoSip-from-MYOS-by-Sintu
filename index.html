@@ -792,10 +792,33 @@
         const blockCheck = await db.ref(`users/${currentChatPartner.uid}/blocked/${currentUser.uid}`).once('value');
         if(blockCheck.exists()) { amIBlocked = true; updateChatUIBlockStatus(); return; }
 
+        // ১. ডেটাবেসে মেসেজ সেভ করা
         db.ref(`messages/${getChatId(currentUser.uid, currentChatPartner.uid)}`).push({ 
             sender: currentUser.uid, text: text, timestamp: firebase.database.ServerValue.TIMESTAMP, status: 'sent' 
         });
+        
         document.getElementById('chat-input').value = '';
+
+        // ২. ইউজারের টোকেন খুঁজে বের করে ব্যাকএন্ড API-কে নোটিফিকেশন পাঠাতে বলা
+        try {
+            const tokenSnap = await db.ref(`users/${currentChatPartner.uid}/fcmToken`).once('value');
+            const token = tokenSnap.val();
+            
+            if(token) {
+                // Vercel এর API কে কল করা
+                fetch('/api/notify', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        token: token,
+                        title: `New message from ${myProfileData.displayName || myProfileData.username}`,
+                        body: text
+                    })
+                });
+            }
+        } catch (err) {
+            console.log("Failed to trigger notification", err);
+        }
     }
 
     function closeChat() {
